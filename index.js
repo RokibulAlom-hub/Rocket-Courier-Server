@@ -22,7 +22,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
     console.log("Connected to MongoDB successfully!");
 
     const usersCollection = client.db("parselAdmin22").collection("allusers");
@@ -75,12 +75,25 @@ async function run() {
       const result = await usersCollection.find(query).toArray()
       res.send(result)
     })
+    // get parcels 
+    app.get('/parcels',async(req,res) => {
+      const email = req.query.email
+      const query  ={email: email}
+      const result = await parcelCollection.find(query).toArray()
+      res.send(result)
+    })
+    // get all parcels in allparcel page
+    app.get('/allparcels',async (req,res) => {
+      const result = await parcelCollection.find().toArray()
+      res.send(result)
+    })
     // create parcel post
     app.post('/parcels' ,async(req,res) => {
       const parcel = req.body
       const result = await parcelCollection.insertOne(parcel)
       res.send(result)
     })
+
 
   } catch (err) {
     console.error("Connection error:", err);
