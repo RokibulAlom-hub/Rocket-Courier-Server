@@ -27,6 +27,9 @@ async function run() {
 
     const usersCollection = client.db("parselAdmin22").collection("allusers");
     const parcelCollection = client.db("parselAdmin22").collection("allParcel");
+    const reviewsCollection = client
+      .db("parselAdmin22")
+      .collection("allreviews");
 
     // get all users
     app.get("/allusers", async (req, res) => {
@@ -48,7 +51,7 @@ async function run() {
     app.patch("/users/:id", async (req, res) => {
       const id = req.params.id;
       const role = req.body.role;
-      console.log(id, role);
+      // console.log(id, role);
 
       const filter = { _id: new ObjectId(id) };
       const updateDoc = {
@@ -78,7 +81,11 @@ async function run() {
     // get parcels
     app.get("/parcels", async (req, res) => {
       const email = req.query.email;
-      const query = { email: email };
+      const filter = req.query.filter;
+      let query = {email:email}
+      if (filter) {
+        query.status = filter
+      }
       const result = await parcelCollection.find(query).toArray();
       res.send(result);
     });
@@ -96,10 +103,10 @@ async function run() {
     // update parecel
     app.patch("/update/parcel/:id", async (req, res) => {
       const id = req.params.id;
-      const filter = {_id : new ObjectId (id)}
+      const filter = { _id: new ObjectId(id) };
       const options = { upsert: true };
       const updateDoc = {
-        $set:req.body
+        $set: req.body,
       };
       const result = await parcelCollection.updateOne(
         filter,
@@ -111,7 +118,7 @@ async function run() {
     // update the parcel status through patch
     app.patch("/manage-parcel/:id", async (req, res) => {
       const id = req.params.id;
-      const manageDoc = req.body
+      const manageDoc = req.body;
       const query = { _id: new ObjectId(id) };
       // console.log(manageDoc, query);
 
@@ -130,28 +137,43 @@ async function run() {
       );
       res.send(result);
     });
-    // get the deliverman data 
-    app.get('/delivery-man-list/:id',async(req,res) => {
-      const id = req.params.id
-      const query = {deliverymanId: id}
+    // get the deliverman data
+    app.get("/delivery-man-list/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { deliverymanId: id };
       // console.log(query);
-      
-      const result = await parcelCollection.find(query).toArray()
-      res.send(result)
-    })
+
+      const result = await parcelCollection.find(query).toArray();
+      res.send(result);
+    });
     // change status from deliver man
-    app.patch('/update-status/:id',async(req,res) => {
-      const id = req.params.id
-      const data = req.body
-      const query = {_id: new ObjectId(id)}
-      const updateDoc ={
-        $set:{
-          status: data.status
-        }
-      }
-      const result = await parcelCollection.updateOne(query,updateDoc)
-      res.send(result)
-    })
+    app.patch("/update-status/:id", async (req, res) => {
+      const id = req.params.id;
+      const data = req.body;
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          status: data.status,
+        },
+      };
+      const result = await parcelCollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
+    // create reveiw
+    app.post("/reviews", async (req, res) => {
+      const reveiw = req.body;
+      const result = await reviewsCollection.insertOne(reveiw);
+      res.send(result);
+    });
+    // get reveiw
+    app.get("/reviews/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { dmanID: id };
+      // console.log(query);
+
+      const result = await reviewsCollection.find(query).toArray();
+      res.send(result);
+    });
   } catch (err) {
     console.error("Connection error:", err);
   }
