@@ -82,9 +82,9 @@ async function run() {
     app.get("/parcels", async (req, res) => {
       const email = req.query.email;
       const filter = req.query.filter;
-      let query = {email:email}
+      let query = { email: email };
       if (filter) {
-        query.status = filter
+        query.status = filter;
       }
       const result = await parcelCollection.find(query).toArray();
       res.send(result);
@@ -150,12 +150,23 @@ async function run() {
     app.patch("/update-status/:id", async (req, res) => {
       const id = req.params.id;
       const data = req.body;
+      const dmanID = req.query.dmanID;
+      const findDman = { _id: new ObjectId(dmanID) };
       const query = { _id: new ObjectId(id) };
+      // update count for deliver man
+      const updateCount = {
+        $inc: {
+          delivered: 1,
+        },
+      };
+      // update status for parcel
       const updateDoc = {
         $set: {
           status: data.status,
         },
       };
+      // console.log(dmanID,gotDman);
+      const gotDman = await usersCollection.updateOne(findDman, updateCount);
       const result = await parcelCollection.updateOne(query, updateDoc);
       res.send(result);
     });
@@ -163,6 +174,18 @@ async function run() {
     app.post("/reviews", async (req, res) => {
       const reveiw = req.body;
       const result = await reviewsCollection.insertOne(reveiw);
+      const numRating = parseFloat(reveiw.rating);
+      const dmanID = reveiw.dmanID;
+      const query = { _id: new ObjectId(dmanID) };
+      const updateData = { $push: { ratings: numRating } };
+      const options = { upsert: true };
+      const update = await usersCollection.updateOne(
+        query,
+        updateData,
+        options
+      );
+      
+
       res.send(result);
     });
     // get reveiw
