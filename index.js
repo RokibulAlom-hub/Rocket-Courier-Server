@@ -48,18 +48,33 @@ async function run() {
       res.status(201).send(result);
     });
     // update the user status
-    app.patch("/users/:id", async (req, res) => {
-      const id = req.params.id;
-      const role = req.body.role;
-      // console.log(id, role);
+    // app.patch("/users/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   const role = req.body.role;
+    //   // const filter = { _id: new ObjectId (id) };
+    //   const updateDoc = {
+    //     $set: {
+    //       role: role,
+    //     },
+    //   };
+    //   console.log(id,updateDoc);
 
-      const filter = { _id: new ObjectId(id) };
+    //   const result = await usersCollection.updateOne(filter, updateDoc);
+    //   res.send(result);
+    // });
+    // update user profile
+    app.patch("/users/update", async (req, res) => {
+      const roleId = req.query.roleId;
+      const updateData = req.body.updateApi;
+      const query = { _id: new ObjectId(roleId) };
       const updateDoc = {
         $set: {
-          role: role,
+          name: updateData?.name,
+          photoURL: updateData?.photoURL,
         },
       };
-      const result = await usersCollection.updateOne(filter, updateDoc);
+      // console.log(roleId,updateData,updateDoc);
+      const result = await usersCollection.updateOne(query, updateDoc);
       res.send(result);
     });
     // get the role by user login
@@ -72,11 +87,26 @@ async function run() {
     // get all the delivery mans
     app.get("/alldelivery", async (req, res) => {
       const deliveryman = req.query.role;
-      // console.log(deliveryman);
-
-      const query = { role: deliveryman };
-      const result = await usersCollection.find(query).toArray();
-      res.send(result);
+      const result = await usersCollection.aggregate([
+        // 
+        {
+          $match:{role: deliveryman}
+        },
+        // make the average ratings field
+        {
+          $addFields:{
+            averageReveiw:{$avg: "$ratings"},
+          }
+        },
+        // sort data by delivered
+        {
+          $sort:{
+            delivered:-1,
+            averageReveiw:-1
+          }
+        },
+      ]).toArray()
+      res.send(result)
     });
     // get parcels
     app.get("/parcels", async (req, res) => {
@@ -184,7 +214,6 @@ async function run() {
         updateData,
         options
       );
-      
 
       res.send(result);
     });
