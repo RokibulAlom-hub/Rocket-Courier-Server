@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
@@ -30,7 +31,15 @@ async function run() {
     const reviewsCollection = client
       .db("parselAdmin22")
       .collection("allreviews");
-
+     
+    // create jwt token
+    app.post('/jwt',async(req,res) => {
+      const user = req.body;
+      const token = jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{
+        expiresIn:"1h"
+      })
+      res.send({token})
+    })
     // get all users
     app.get("/allusers", async (req, res) => {
       const result = await usersCollection.find().toArray();
@@ -87,26 +96,28 @@ async function run() {
     // get all the delivery mans
     app.get("/alldelivery", async (req, res) => {
       const deliveryman = req.query.role;
-      const result = await usersCollection.aggregate([
-        // 
-        {
-          $match:{role: deliveryman}
-        },
-        // make the average ratings field
-        {
-          $addFields:{
-            averageReveiw:{$avg: "$ratings"},
-          }
-        },
-        // sort data by delivered
-        {
-          $sort:{
-            delivered:-1,
-            averageReveiw:-1
-          }
-        },
-      ]).toArray()
-      res.send(result)
+      const result = await usersCollection
+        .aggregate([
+          //
+          {
+            $match: { role: deliveryman },
+          },
+          // make the average ratings field
+          {
+            $addFields: {
+              averageReveiw: { $avg: "$ratings" },
+            },
+          },
+          // sort data by delivered
+          {
+            $sort: {
+              delivered: -1,
+              averageReveiw: -1,
+            },
+          },
+        ])
+        .toArray();
+      res.send(result);
     });
     // get parcels
     app.get("/parcels", async (req, res) => {
