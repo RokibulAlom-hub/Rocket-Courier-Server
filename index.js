@@ -65,7 +65,7 @@ async function run() {
       res.send({ token });
     });
     // get all users
-    app.get("/allusers", verifyToken, async (req, res) => {
+    app.get("/allusers", async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
     });
@@ -96,7 +96,7 @@ async function run() {
       res.send(result);
     });
     // update user profile
-    app.patch("/users/update", async (req, res) => {
+    app.patch("/update-user", async (req, res) => {
       const roleId = req.query.roleId;
       const updateData = req.body.updateApi;
       const query = { _id: new ObjectId(roleId) };
@@ -118,7 +118,7 @@ async function run() {
       res.send(result);
     });
     // get all the delivery mans
-    app.get("/alldelivery", verifyToken, async (req, res) => {
+    app.get("/alldelivery", async (req, res) => {
       const deliveryman = req.query.role;
       const result = await usersCollection
         .aggregate([
@@ -155,7 +155,7 @@ async function run() {
       res.send(result);
     });
     // get all parcels in allparcel page
-    app.get("/allparcels", verifyToken, async (req, res) => {
+    app.get("/allparcels", async (req, res) => {
       const result = await parcelCollection.find().toArray();
       res.send(result);
     });
