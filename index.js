@@ -3,12 +3,20 @@ const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-
 const app = express();
 const port = process.env.PORT || 7000;
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "https://parcel-web-project.web.app",
+      "https://parcel-web-project.firebaseapp.com",
+    ],
+  })
+);
 app.use(express.json());
 
 // MongoDB Configuration
@@ -21,6 +29,22 @@ const client = new MongoClient(uri, {
   },
 });
 
+// verifytoken
+const verifyToken = async (req, res, next) => {
+  //  console.log("inside verify token ", req.headers.authorization);
+  if (!req.headers.authorization) {
+    return res.status(401).send({ message: "forbidden access" });
+  }
+  const token = req.headers.authorization.split(" ")[1];
+  // console.log(token);
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ message: "forbidden access" });
+    }
+    req.decoded = decoded;
+    next();
+  });
+};
 async function run() {
   try {
     // await client.connect();
@@ -31,17 +55,17 @@ async function run() {
     const reviewsCollection = client
       .db("parselAdmin22")
       .collection("allreviews");
-     
+
     // create jwt token
-    app.post('/jwt',async(req,res) => {
+    app.post("/jwt", async (req, res) => {
       const user = req.body;
-      const token = jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{
-        expiresIn:"1h"
-      })
-      res.send({token})
-    })
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "1h",
+      });
+      res.send({ token });
+    });
     // get all users
-    app.get("/allusers", async (req, res) => {
+    app.get("/allusers", verifyToken, async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
     });
@@ -57,20 +81,20 @@ async function run() {
       res.status(201).send(result);
     });
     // update the user status
-    // app.patch("/users/:id", async (req, res) => {
-    //   const id = req.params.id;
-    //   const role = req.body.role;
-    //   // const filter = { _id: new ObjectId (id) };
-    //   const updateDoc = {
-    //     $set: {
-    //       role: role,
-    //     },
-    //   };
-    //   console.log(id,updateDoc);
+    app.patch("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const role = req.body.role;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          role: role,
+        },
+      };
+      // console.log(id, updateDoc);
 
-    //   const result = await usersCollection.updateOne(filter, updateDoc);
-    //   res.send(result);
-    // });
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
     // update user profile
     app.patch("/users/update", async (req, res) => {
       const roleId = req.query.roleId;
@@ -94,7 +118,7 @@ async function run() {
       res.send(result);
     });
     // get all the delivery mans
-    app.get("/alldelivery", async (req, res) => {
+    app.get("/alldelivery", verifyToken, async (req, res) => {
       const deliveryman = req.query.role;
       const result = await usersCollection
         .aggregate([
@@ -120,7 +144,7 @@ async function run() {
       res.send(result);
     });
     // get parcels
-    app.get("/parcels", async (req, res) => {
+    app.get("/parcels", verifyToken, async (req, res) => {
       const email = req.query.email;
       const filter = req.query.filter;
       let query = { email: email };
@@ -131,7 +155,7 @@ async function run() {
       res.send(result);
     });
     // get all parcels in allparcel page
-    app.get("/allparcels", async (req, res) => {
+    app.get("/allparcels", verifyToken, async (req, res) => {
       const result = await parcelCollection.find().toArray();
       res.send(result);
     });
