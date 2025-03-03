@@ -112,10 +112,18 @@ async function run() {
     });
     // get the role by user login
     app.get("/user/role/:email", async (req, res) => {
-      const email = req.params.email;
-      const query = { email: email };
-      const result = await usersCollection.findOne(query);
-      res.send(result);
+      try {
+        const email = req.params.email;
+        const query = { email: { $regex: `^${email}$`, $options: "i" } }; // Case-insensitive search
+        const result = await usersCollection.findOne(query);
+        if (!result) {
+          return res.status(404).send("user not found");
+        }
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching user:", error);
+        res.status(500).send({ message: "Internal server error" });
+      }
     });
     // get all the delivery mans
     app.get("/alldelivery", async (req, res) => {
